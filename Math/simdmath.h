@@ -5,7 +5,7 @@
 #include <xmmintrin.h> // intrinics
 #include <smmintrin.h> // intrinics
 #include <math.h> // sin cos
-#include <DirectXMath.h>
+#include <DirectXMath.h> // DirectX helper methods
 
 #define PI 3.1415926535f
 
@@ -14,7 +14,7 @@ __declspec(align(16)) class SIMDMatrix4
 {
 private:
 	__m128 _rows[4];
-	// column-major matrix
+	// row-major matrix
 public:
 	friend class SIMDVector3;
 
@@ -78,8 +78,46 @@ public:
 		_rows[3] = _mm_add_ps(_rows[3], other._rows[3]);
 	}
 
+	// Overload + operator
+	inline SIMDMatrix4& operator+(SIMDMatrix4& other)
+	{
+		_rows[0] = _mm_add_ps(_rows[0], other._rows[0]);
+		_rows[1] = _mm_add_ps(_rows[1], other._rows[1]);
+		_rows[2] = _mm_add_ps(_rows[2], other._rows[2]);
+		_rows[3] = _mm_add_ps(_rows[3], other._rows[3]);
+		return *this;
+	}
+
+	// Overload += operator
+	inline void operator+=(SIMDMatrix4& other)
+	{
+		_rows[0] = _mm_add_ps(_rows[0], other._rows[0]);
+		_rows[1] = _mm_add_ps(_rows[1], other._rows[1]);
+		_rows[2] = _mm_add_ps(_rows[2], other._rows[2]);
+		_rows[3] = _mm_add_ps(_rows[3], other._rows[3]);
+	}
+
 	// Subtract the matrix by another matrix, store the result back to this
 	inline void Sub(SIMDMatrix4& other)
+	{
+		_rows[0] = _mm_sub_ps(_rows[0], other._rows[0]);
+		_rows[1] = _mm_sub_ps(_rows[1], other._rows[1]);
+		_rows[2] = _mm_sub_ps(_rows[2], other._rows[2]);
+		_rows[3] = _mm_sub_ps(_rows[3], other._rows[3]);
+	}
+
+	// Overload - operator
+	inline SIMDMatrix4& operator-(SIMDMatrix4& other)
+	{
+		_rows[0] = _mm_sub_ps(_rows[0], other._rows[0]);
+		_rows[1] = _mm_sub_ps(_rows[1], other._rows[1]);
+		_rows[2] = _mm_sub_ps(_rows[2], other._rows[2]);
+		_rows[3] = _mm_sub_ps(_rows[3], other._rows[3]);
+		return *this;
+	}
+
+	// Overload -= operator
+	inline void operator-=(SIMDMatrix4& other)
 	{
 		_rows[0] = _mm_sub_ps(_rows[0], other._rows[0]);
 		_rows[1] = _mm_sub_ps(_rows[1], other._rows[1]);
@@ -96,10 +134,62 @@ public:
 		__m128 mat_rows3 = mat._rows[3];
 		_MM_TRANSPOSE4_PS(mat_rows0, mat_rows1, mat_rows2, mat_rows3);
 
-		__m128 x = _mm_dp_ps(_rows[0], mat_rows0, 0xF1);
-		__m128 y = _mm_dp_ps(_rows[1], mat_rows1, 0xF2);
-		__m128 z = _mm_dp_ps(_rows[2], mat_rows2, 0xF4);
-		__m128 w = _mm_dp_ps(_rows[3], mat_rows3, 0xF8);
+		for (int i = 0; i < 4; ++i)
+		{
+			__m128 x = _mm_dp_ps(_rows[i], mat_rows0, 0xF1);
+			__m128 y = _mm_dp_ps(_rows[i], mat_rows1, 0xF2);
+			__m128 z = _mm_dp_ps(_rows[i], mat_rows2, 0xF4);
+			__m128 w = _mm_dp_ps(_rows[i], mat_rows3, 0xF8);
+
+			_rows[i] = _mm_add_ps(x, y);
+			_rows[i] = _mm_add_ps(_rows[i], z);
+			_rows[i] = _mm_add_ps(_rows[i], w);
+		}
+	}
+
+	// Overload * operator
+	inline SIMDMatrix4& operator*(const SIMDMatrix4& mat)
+	{
+		__m128 mat_rows0 = mat._rows[0];
+		__m128 mat_rows1 = mat._rows[1];
+		__m128 mat_rows2 = mat._rows[2];
+		__m128 mat_rows3 = mat._rows[3];
+		_MM_TRANSPOSE4_PS(mat_rows0, mat_rows1, mat_rows2, mat_rows3);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			__m128 x = _mm_dp_ps(_rows[i], mat_rows0, 0xF1);
+			__m128 y = _mm_dp_ps(_rows[i], mat_rows1, 0xF2);
+			__m128 z = _mm_dp_ps(_rows[i], mat_rows2, 0xF4);
+			__m128 w = _mm_dp_ps(_rows[i], mat_rows3, 0xF8);
+
+			_rows[i] = _mm_add_ps(x, y);
+			_rows[i] = _mm_add_ps(_rows[i], z);
+			_rows[i] = _mm_add_ps(_rows[i], w);
+		}
+		return *this;
+	}
+
+	// Overload *= operator
+	inline void operator*=(const SIMDMatrix4& mat)
+	{
+		__m128 mat_rows0 = mat._rows[0];
+		__m128 mat_rows1 = mat._rows[1];
+		__m128 mat_rows2 = mat._rows[2];
+		__m128 mat_rows3 = mat._rows[3];
+		_MM_TRANSPOSE4_PS(mat_rows0, mat_rows1, mat_rows2, mat_rows3);
+
+		for (int i = 0; i < 4; ++i)
+		{
+			__m128 x = _mm_dp_ps(_rows[i], mat_rows0, 0xF1);
+			__m128 y = _mm_dp_ps(_rows[i], mat_rows1, 0xF2);
+			__m128 z = _mm_dp_ps(_rows[i], mat_rows2, 0xF4);
+			__m128 w = _mm_dp_ps(_rows[i], mat_rows3, 0xF8);
+
+			_rows[i] = _mm_add_ps(x, y);
+			_rows[i] = _mm_add_ps(_rows[i], z);
+			_rows[i] = _mm_add_ps(_rows[i], w);
+		}
 	}
 
 	// Set a scale transformation given a uniform scale
@@ -136,7 +226,7 @@ public:
 
 		_rows[0] = _mm_setr_ps(cosTheta, 0.0f, sinTheta, 0.0f);
 		_rows[1] = _mm_set_ps1(1.0f);
-		_rows[1] = _mm_insert_ps(_rows[0], _rows[0], 0x0D);
+		_rows[1] = _mm_insert_ps(_rows[1], _rows[1], 0x0D);
 		_rows[2] = _mm_setr_ps(-sinTheta, 0.0f, cosTheta, 0.0f);
 		_rows[3] = _mm_set_ps1(1.0f);
 		_rows[3] = _mm_insert_ps(_rows[3], _rows[3], 0x07);
@@ -148,10 +238,10 @@ public:
 		float cosTheta = cosf(radian);
 		float sinTheta = sinf(radian);
 
-		_rows[0] = _mm_setr_ps(0.0f, cosTheta, -sinTheta, 0.0f);
-		_rows[1] = _mm_setr_ps(0.0f, sinTheta, cosTheta, 0.0f);
+		_rows[0] = _mm_setr_ps(cosTheta, -sinTheta, 0.0f, 0.0f);
+		_rows[1] = _mm_setr_ps(sinTheta, cosTheta, 0.0f, 0.0f);
 		_rows[2] = _mm_set_ps1(1.0f);
-		_rows[2] = _mm_insert_ps(_rows[0], _rows[0], 0x0B);
+		_rows[2] = _mm_insert_ps(_rows[2], _rows[2], 0x0B);
 		_rows[3] = _mm_set_ps1(1.0f);
 		_rows[3] = _mm_insert_ps(_rows[3], _rows[3], 0x07);
 	}
@@ -180,7 +270,7 @@ public:
 	void CreateTranslation(const SIMDVector3& translation);
 
 	// Set a rotation transformation given a quaternion
-	//void CreateRotationFromQuaternion(const SIMDQuaternion& q);
+	// void CreateRotationFromQuaternion(const SIMDQuaternion& q);
 
 	// Set a look-at matrix
 	// vUp MUST be normalized or bad things will happen
@@ -202,7 +292,7 @@ private:
 	// _data.m128_f32[1] = y
 	// _data.m128_f32[2] = z
 	// _data.m128_f32[3] = w
-	// column-major
+	// row-major
 public:
 	friend class SIMDMatrix4;
 	friend class SIMDQuaternion;
@@ -267,13 +357,28 @@ public:
 		_data = _mm_insert_ps(_data, temp, 0x20);
 	}
 
-	inline float GetZ()
+	inline float GetX() const
+	{
+		return _data.m128_f32[0];
+	}
+
+	inline float GetY() const
+	{
+		return _data.m128_f32[1];
+	}
+
+	inline float GetZ() const
 	{
 		return _data.m128_f32[2];
 	}
 
+	inline float GetW() const
+	{
+		return _data.m128_f32[3];
+	}
+
 	// Dot product, return a float
-	inline float DotProduct(const SIMDVector3& other)
+	inline float Dot(const SIMDVector3& other)
 	{
 		__m128 temp = _mm_dp_ps(_data, other._data, 0x78);
 		return	temp.m128_f32[3];
@@ -285,8 +390,33 @@ public:
 		_data = _mm_add_ps(_data, other._data);
 	}
 
+	// Overload + operator
+	inline SIMDVector3& operator+(const SIMDVector3& other)
+	{
+		_data = _mm_add_ps(_data, other._data);
+		return *this;
+	}
+
+	// Overload += operator
+	inline void operator+=(const SIMDVector3& other)
+	{
+		_data = _mm_add_ps(_data, other._data);
+	}
+
 	// Substract the other vector from this, store result back to this
 	inline void Substract(const SIMDVector3& other)
+	{
+		_data = _mm_sub_ps(_data, other._data);
+	}
+
+	// Overload - operator
+	inline SIMDVector3& operator-(const SIMDVector3& other)
+	{
+		_data = _mm_sub_ps(_data, other._data);
+	}
+
+	// Overload -= operator
+	inline void operator-=(const SIMDVector3& other)
 	{
 		_data = _mm_sub_ps(_data, other._data);
 	}
@@ -437,6 +567,26 @@ public:
 		return *this;
 	}
 
+	inline float GetX() const
+	{
+		return _data.m128_f32[0];
+	}
+
+	inline float GetY() const
+	{
+		return _data.m128_f32[1];
+	}
+
+	inline float GetZ() const
+	{
+		return _data.m128_f32[2];
+	}
+
+	inline float GetW() const
+	{
+		return _data.m128_f32[3];
+	}
+
 	// Multiply this quaternion with another quaternion, store result back to this
 	inline void Multiply(const SIMDQuaternion& other)
 	{
@@ -456,11 +606,6 @@ public:
 		result = _mm_addsub_ps(_mm_shuffle_ps(result, result, _MM_SHUFFLE(3, 1, 0, 2)), _mm_shuffle_ps(q2Z, q2Z, _MM_SHUFFLE(2, 3, 1, 0)));
 		result = _mm_shuffle_ps(result, result, _MM_SHUFFLE(3, 2, 0, 1));
 		_data = result;
-	}
-
-	inline float GetX()
-	{
-		return _data.m128_f32[0];
 	}
 
 	inline void MultiplyDX(const SIMDQuaternion& other)
